@@ -35,7 +35,7 @@ def main(mode="human"):
             env.render()
             print(f"Reward: {reward}\n")
     elif mode == "train":
-        env = Environment()
+        env = Environment(train=True)
         episodes = 8000
         agent = DQNAgent(STATE_SIZE, len(ACTION_SPACE))
 
