@@ -1,5 +1,6 @@
 import random
 import time
+import math
 
 import pygame
 
@@ -28,6 +29,7 @@ class Environment:
         self.wind = self._generateWindForce()
         self.steps = 0
         self.score = 0
+        self.prev_distance = None
 
         return self._get_observation()
 
@@ -52,20 +54,33 @@ class Environment:
             return observation, reward, done, {}
 
     def _get_observation(self):
+        distance_to_target = Vector.euclidean_distance(self.target.coordinates, self.drone.coordinates)
+
+        new_p1 = self.target.coordinates.x - self.drone.coordinates.x
+        new_p2 = self.target.coordinates.y - self.drone.coordinates.y
+
+        angle = math.degrees(math.atan2(new_p1, new_p2))
+
         observation = [
             self.drone.coordinates.x, self.drone.coordinates.y,
-            self.grenade.coordinates.x, self.grenade.coordinates.y,
-            self.target.coordinates.x, self.target.coordinates.y,
+            distance_to_target,
+            angle,
             self.wind.x, self.wind.y,
         ]
         return observation
 
     def _calculate_reward(self):
+        distance = Vector.euclidean_distance(self.grenade.coordinates, self.target.coordinates)
         if self.grenade.hit_ground:
-            distance = Vector.euclidean_distance(self.grenade.coordinates, self.target.coordinates)
-            if distance <= 5:
+            if distance < 5:
                 return 100
-        return -0.5
+            else:
+                return -distance
+        if self.grenade.released and self.prev_distance is not None:
+            if self.prev_distance > distance:
+                return 1
+        self.prev_distance = distance
+        return -1
     
     def _generateWindForce(self):
         return Vector(random.uniform(-WIND_FORCE_MAX, WIND_FORCE_MAX), 0)
@@ -75,16 +90,12 @@ class Environment:
 
     def render(self):
         self.screen.fill((180, 180, 180))  # Clear the screen
-
         # Draw objects (dummy example)
         self.drone.render(self.screen, PIXELS_PER_METER)
         self.grenade.render(self.screen, PIXELS_PER_METER)
         self.target.render(self.screen, PIXELS_PER_METER)
-
         self._draw_info()
-
         pygame.display.flip()
-        
         time.sleep(RENDER_PAUSE)
 
     def close(self):
@@ -116,23 +127,33 @@ class Environment:
         text = self.font.render(terminal_velocity_text, True, (0, 0, 0))
         self.screen.blit(text, (self.width * PIXELS_PER_METER - 150, 50))
 
-    def _draw_wind_info(self):
-        wind_magnitude = self.wind.x
-        wind_text = f"Wind: {wind_magnitude:.2f} m/s"
-        text = self.font.render(wind_text, True, (0, 0, 0))
-        self.screen.blit(text, (self.width * PIXELS_PER_METER - 150, 90))
+    def _draw_debug(self):
+        observation = self._get_observation()
+        # Observation values to display
+        x, y, distance_to_target, angle, wind_x, wind_y = observation
+        # Convert angle to degrees for display
+        angle_degrees = angle
+        # Create text surfaces
+        x_text = self.font.render(f"Drone X: {x:.2f} m", True, (0, 0, 0))
+        y_text = self.font.render(f"Drone Y: {y:.2f} m", True, (0, 0, 0))
+        distance_text = self.font.render(f"Distance to Target: {distance_to_target:.2f} m", True, (0, 0, 0))
+        angle_text = self.font.render(f"Angle: {angle_degrees:.2f} degrees", True, (0, 0, 0))
+        wind_x_text = self.font.render(f"Wind X: {wind_x:.2f} m/s", True, (0, 0, 0))
+        wind_y_text = self.font.render(f"Wind Y: {wind_y:.2f} m/s", True, (0, 0, 0))
+        # Blit the text onto the screen
+        self.screen.blit(x_text, (self.width * PIXELS_PER_METER - 150, 70))
+        self.screen.blit(y_text, (self.width * PIXELS_PER_METER - 150, 90))
+        self.screen.blit(distance_text, (self.width * PIXELS_PER_METER - 150, 110))
+        self.screen.blit(angle_text, (self.width * PIXELS_PER_METER - 150, 130))
+        self.screen.blit(wind_x_text, (self.width * PIXELS_PER_METER - 150, 150))
+        self.screen.blit(wind_y_text, (self.width * PIXELS_PER_METER - 150, 170))
 
-    def _draw_score(self):
-        score_text = f"Score: {self.score}"
-        text = self.font.render(score_text, True, (0, 0, 0))
-        self.screen.blit(text, (self.width * PIXELS_PER_METER - 150, 110))
 
     def _draw_info(self):
         self._draw_scale()
         self._draw_time_counter()
         self._draw_grenade_velocity()
-        self._draw_wind_info()
-        self._draw_score()
+        self._draw_debug()
 
 
     

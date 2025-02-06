@@ -16,18 +16,18 @@ class Drone:
             self.coordinates.x += 10 * dt  # Move right
             if not self.grenade.released:
                 self.grenade.coordinates.x = self.coordinates.x
-                self.grenade.coordinates.y = self.coordinates.y + 1
+                self.grenade.coordinates.y = self.coordinates.y
         elif action == 1:
             self.coordinates.x -= 10 * dt  # Move left
             if not self.grenade.released:
                 self.grenade.coordinates.x = self.coordinates.x
-                self.grenade.coordinates.y = self.coordinates.y + 1
+                self.grenade.coordinates.y = self.coordinates.y
         elif action == 2:
             if not self.grenade.released:
                 self.grenade.released = True
 
     def attach_grenade(self):
-        self.grenade = Grenade(self.coordinates.x, self.coordinates.y + 1, HEIGHT)
+        self.grenade = Grenade(self.coordinates.x, self.coordinates.y, HEIGHT)
         return self.grenade
 
     def render(self, screen, pixel_per_meter):
