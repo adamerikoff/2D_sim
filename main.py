@@ -36,7 +36,7 @@ def main(mode="human"):
             print(f"Reward: {reward}\n")
     elif mode == "train":
         env = Environment()
-        episodes = 50000
+        episodes = 8000
         agent = DQNAgent(STATE_SIZE, len(ACTION_SPACE))
 
         save_dir = "brains"
